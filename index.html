@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Malla Interactiva ICIIT</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
@@ -39,7 +39,7 @@
   <div class="grid" id="grid"></div>
 
   <script>
-    // Datos de la malla: semestres 1-10 + Inglés + CELE
+    // **1) Datos completos de la malla**
     const data = {
       '1': [
         {name:'Introducción a la Vida Universitaria', cr:2, prereqs:[]},
@@ -150,56 +150,116 @@
       ]
     };
 
-    // Dependientes
+    // **2) Construir dependents automáticamente**
     const dependents = {};
     Object.values(data).flat().forEach(item => {
       item.prereqs.forEach(pr => {
-        if (!dependents[pr]) dependents[pr] = [];
+        dependents[pr] = dependents[pr] || [];
         dependents[pr].push(item.name);
       });
     });
 
     const select = document.getElementById('semester-select');
-    const grid = document.getElementById('grid');
+    const grid   = document.getElementById('grid');
 
-    // Poblado selector
+    // Lectura/escritura de estado en localStorage
+    const getState  = id => { try { return JSON.parse(localStorage.getItem(id)) || {}; } catch { return {}; } };
+    const saveState = (id, state) => { localStorage.setItem(id, JSON.stringify(state)); };
+
+    // Poblamos el SELECT
     Object.keys(data).forEach(key => {
-      const opt = document.createElement('option'); opt.value = key;
-      opt.textContent = key === 'english' ? 'Inglés' : key === 'CELE' ? 'CELE' : 'Semestre ' + key;
+      const opt = document.createElement('option');
+      opt.value       = key;
+      opt.textContent = key==='english' ? 'Inglés' : key==='CELE' ? 'CELE' : 'Semestre '+key;
       select.appendChild(opt);
     });
 
-    // Estado
-    const getState = id => { try { return JSON.parse(localStorage.getItem(id)) || {}; } catch { return {}; }};
-    const saveState = (id, state) => localStorage.setItem(id, JSON.stringify(state));
+    // Al cargar, restauramos semestre seleccionado
+    const savedSem = localStorage.getItem('selected-semester');
+    if (savedSem && data[savedSem]) {
+      select.value = savedSem;
+      showSemester(savedSem);
+    }
 
+    // Cuando cambie el SELECT
     select.addEventListener('change', () => {
-      if (!select.value) { grid.innerHTML = ''; grid.classList.remove('active'); return; }
-      showSemester(select.value);
+      const sem = select.value;
+      localStorage.setItem('selected-semester', sem);
+      if (!sem) {
+        grid.innerHTML = '';
+        grid.classList.remove('active');
+      } else {
+        showSemester(sem);
+      }
     });
-    document.getElementById('reset-btn').addEventListener('click', () => { localStorage.clear(); select.value = ''; grid.innerHTML = ''; grid.classList.remove('active'); });
 
-    // Mostrar
+    // Reset
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      localStorage.clear();
+      select.value = '';
+      grid.innerHTML = '';
+      grid.classList.remove('active');
+    });
+
+    // Función para renderizar el semestre
     function showSemester(key) {
       grid.innerHTML = '';
       data[key].forEach(item => {
-        const id = key + '-' + item.name;
+        const id    = key+'-'+item.name;
         const state = getState(id);
-        const card = document.createElement('div'); card.className = 'card' + (state.approved ? ' approved' : ''); card.dataset.id = id;
-        card.innerHTML = `<h3>${item.name}</h3><p>Créditos: ${item.cr}</p>`;
-        const label = document.createElement('label'); label.textContent = 'Nota:';
-        const input = document.createElement('input'); input.type = 'number'; input.min = 1; input.max = 7; input.step = 0.1; input.value = state.note || '';
-        input.addEventListener('blur', e => { state.note = e.target.value; saveState(id, state); }); label.append(input); card.append(label);
-        card.addEventListener('mouseenter', () => { removePopovers(); const pop = document.createElement('div'); pop.className = 'popover'; pop.innerHTML = `
-          <h4>Debes aprobar:</h4><ul>${(item.prereqs.length ? item.prereqs : ['Este ramo no tiene prerrequisitos']).map(pr => `<li>${pr}</li>`).join('')}</ul>
-          <h4>Prerrequisito para:</h4><ul>${((dependents[item.name]||[]).length ? dependents[item.name] : ['No es prerrequisito']).map(d=>`<li>${d}</li>`).join('')}</ul>
-        `; card.append(pop); }); card.addEventListener('mouseleave', removePopovers);
-        card.addEventListener('click', () => { state.approved = !state.approved; saveState(id, state); card.classList.toggle('approved', state.approved); });
+
+        const card = document.createElement('div');
+        card.className      = 'card' + (state.approved?' approved':'');
+        card.dataset.id     = id;
+        card.innerHTML      = `<h3>${item.name}</h3><p>Créditos: ${item.cr}</p>`;
+
+        // Input de nota
+        const label = document.createElement('label');
+        label.textContent = 'Nota:';
+        const input = document.createElement('input');
+        input.type  = 'number'; input.min = 1; input.max = 7; input.step = 0.1;
+        input.value = state.note||'';
+        const saveNote = () => {
+          state.note = input.value;
+          saveState(id, state);
+        };
+        input.addEventListener('blur', saveNote);
+        input.addEventListener('change', saveNote);
+        label.appendChild(input);
+        card.appendChild(label);
+
+        // Popover prerrequisitos/dependientes
+        card.addEventListener('mouseenter', () => {
+          removePopovers();
+          const pop = document.createElement('div');
+          pop.className = 'popover';
+          pop.innerHTML = `
+            <h4>Debes aprobar:</h4>
+            <ul>${(item.prereqs.length?item.prereqs:['Este ramo no tiene prerrequisitos'])
+              .map(pr=>`<li>${pr}</li>`).join('')}</ul>
+            <h4>Prerrequisito para:</h4>
+            <ul>${((dependents[item.name]||[]).length?dependents[item.name]:['No es prerrequisito'])
+              .map(d=>`<li>${d}</li>`).join('')}</ul>
+          `;
+          card.appendChild(pop);
+        });
+        card.addEventListener('mouseleave', removePopovers);
+
+        // Toggle aprobado
+        card.addEventListener('click', () => {
+          state.approved = !state.approved;
+          saveState(id, state);
+          card.classList.toggle('approved', state.approved);
+        });
+
         grid.appendChild(card);
       });
       grid.classList.add('active');
     }
-    function removePopovers() { document.querySelectorAll('.popover').forEach(el => el.remove()); }
+
+    function removePopovers() {
+      document.querySelectorAll('.popover').forEach(el=>el.remove());
+    }
   </script>
 </body>
 </html>
