@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Malla Interactiva ICIIT</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+    header { text-align: center; }
+    .controls { margin: 20px 0; display: flex; justify-content: center; gap: 10px; }
+    .controls select, .controls button { padding: 5px 10px; }
+    .grid { display: none; gap: 15px; }
+    .grid.active { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .card { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 10px; }
+    .card h3 { margin: 0 0 5px; font-size: 1.1em; }
+    .card p { margin: 3px 0; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Malla Interactiva ICIIT</h1>
+    <p>Ingeniería Civil Informática e Innovación Tecnológica (UDD)</p>
+  </header>
+
+  <div class="controls">
+    <select id="semester-select"><option value="">-- Selecciona semestre --</option></select>
+    <button id="reset-btn">Reset</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <script>
+    // Carga dinámica del archivo malla.html y lo inserta
+    async function loadMalla() {
+      try {
+        const response = await fetch('malla.html');
+        if (!response.ok) throw new Error('No se pudo cargar malla.html');
+        const html = await response.text();
+        document.getElementById('grid').innerHTML = html;
+        document.getElementById('grid').classList.add('active');
+      } catch (err) {
+        console.error(err);
+        alert('Error al cargar la malla: ' + err.message);
+      }
+    }
+
+    // Handler del selector simplemente invoca loadMalla
+    document.getElementById('semester-select').addEventListener('change', () => {
+      const sem = document.getElementById('semester-select').value;
+      if (!sem) {
+        document.getElementById('grid').innerHTML = '';
+        document.getElementById('grid').classList.remove('active');
+        return;
+      }
+      loadMalla();
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      document.getElementById('semester-select').value = '';
+      document.getElementById('grid').innerHTML = '';
+      document.getElementById('grid').classList.remove('active');
+    });
+  </script>
+</body>
+</html>
