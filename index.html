@@ -5,19 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Malla Interactiva ICIIT</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-    header { text-align: center; margin-bottom: 20px; }
-    .controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
-    select, button { padding: 6px 12px; font-size: 1em; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
-    .card { position: relative; background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 12px; cursor: pointer; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+    header { text-align: center; }
+    .controls { margin: 20px 0; display: flex; justify-content: center; gap: 10px; }
+    .controls select, .controls button { padding: 5px 10px; font-size: 1em; }
+    .grid { display: none; gap: 15px; }
+    .grid.active { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .card { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 10px; cursor: pointer; position: relative; }
     .card.approved { border-color: #4caf50; background: #e8f5e9; }
-    .card h3 { margin: 0 0 8px; font-size: 1.1em; }
-    .card p { margin: 4px 0; font-size: 0.9em; }
-    .popover { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); width: 200px; background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 10; }
+    .card h3 { margin: 0 0 5px; font-size: 1.1em; }
+    .card p { margin: 3px 0; font-size: 0.9em; }
+    .popover { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); width: 220px; background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 10; }
     .popover h4 { margin: 0 0 6px; font-size: 1em; }
     .popover ul { margin: 0; padding-left: 18px; font-size: 0.9em; }
     .popover ul li { margin: 4px 0; }
+    label { display: block; margin-top: 8px; font-size: 0.9em; }
+    input[type="number"] { width: 60px; margin-left: 4px; }
   </style>
 </head>
 <body>
@@ -36,10 +39,101 @@
   <div class="grid" id="grid"></div>
 
   <script>
-    // Datos de la malla: semestres 1-10 + English + CELE
+    // Datos de la malla: semestres 1-10 + Inglés + CELE
     const data = {
-      '1': [ /* ... tus cursos ... */, {name:'Inglés Nivel A2-', cr:0, prereqs:[]}, /* ... */ ],
-      // ...
+      '1': [
+        {name:'Introducción a la Vida Universitaria', cr:2, prereqs:[]},
+        {name:'Desafíos de la Ingeniería Informática', cr:8, prereqs:[]},
+        {name:'Álgebra', cr:12, prereqs:[]},
+        {name:'Introducción al Cálculo', cr:12, prereqs:[]},
+        {name:'Taller de Programación', cr:10, prereqs:[]},
+        {name:'Inglés Nivel A2-', cr:0, prereqs:[]},
+        {name:'Comunicación Escrita', cr:4, prereqs:[]},
+        {name:'Comunicación Oral', cr:4, prereqs:[]}
+      ],
+      '2': [
+        {name:'Cálculo Diferencial', cr:12, prereqs:['Álgebra','Introducción al Cálculo']},
+        {name:'Geometría', cr:10, prereqs:['Introducción al Cálculo']},
+        {name:'Bootcamp Lenguajes de Programación', cr:10, prereqs:['Desafíos de la Ingeniería Informática']},
+        {name:'Taller de Obtención y Preparación de Datos', cr:10, prereqs:['Taller de Programación']},
+        {name:'Inglés Nivel A2+', cr:0, prereqs:['Inglés Nivel A2-']},
+        {name:'Taller de Habilidades para la Autogestión', cr:2, prereqs:['Introducción a la Vida Universitaria']},
+        {name:'Lectura Crítica', cr:4, prereqs:[]},
+        {name:'Pensamiento Crítico', cr:4, prereqs:[]}
+      ],
+      '3': [
+        {name:'Física', cr:12, prereqs:['Cálculo Diferencial']},
+        {name:'Taller de Diseño de Servicios y Prototipado', cr:8, prereqs:[]},
+        {name:'Cálculo Integral', cr:12, prereqs:['Cálculo Diferencial']},
+        {name:'Álgebra Lineal', cr:12, prereqs:['Álgebra']},
+        {name:'Taller de Estructura de Datos y Algoritmos', cr:8, prereqs:['Taller de Programación']},
+        {name:'Inglés Nivel B1-', cr:0, prereqs:['Inglés Nivel A2+']}
+      ],
+      '4': [
+        {name:'Cálculo Multivariable', cr:10, prereqs:['Cálculo Integral','Geometría']},
+        {name:'Probabilidades y Estadística', cr:12, prereqs:['Cálculo Integral']},
+        {name:'Ecuaciones Diferenciales', cr:8, prereqs:['Cálculo Integral']},
+        {name:'Taller de Visualización de Datos', cr:8, prereqs:['Taller de Obtención y Preparación de Datos']},
+        {name:'Base de Datos', cr:8, prereqs:['Taller de Obtención y Preparación de Datos']},
+        {name:'Taller de Habilidades Socioemocionales', cr:2, prereqs:['Taller de Habilidades para la Autogestión']},
+        {name:'Inglés Nivel B1+', cr:0, prereqs:['Inglés Nivel B1-']}
+      ],
+      '5': [
+        {name:'Certificación de Fundamentos de la Nube', cr:1, prereqs:[]},
+        {name:'Software Development Certification I', cr:1, prereqs:['Certificación de Fundamentos de la Nube']},
+        {name:'Taller de Métodos de Innovación Ágiles', cr:6, prereqs:['Taller de Diseño de Servicios y Prototipado']},
+        {name:'Taller de Experiencia del Usuario Ux/ui', cr:6, prereqs:['Taller de Métodos de Innovación Ágiles']},
+        {name:'Ingeniería de Software', cr:8, prereqs:['Taller de Estructura de Datos y Algoritmos','Base de Datos']},
+        {name:'Advanced Databases Workshop', cr:6, prereqs:['Base de Datos','Inglés Nivel B1+']},
+        {name:'Optimización Aplicada Negocios', cr:10, prereqs:['Álgebra Lineal','Cálculo Multivariable']},
+        {name:'Análisis de Datos e Inferencia Estadística', cr:10, prereqs:['Probabilidades y Estadística','Taller de Visualización de Datos']},
+        {name:'Métodos Numéricos', cr:8, prereqs:['Cálculo Multivariable','Ecuaciones Diferenciales']},
+        {name:'Ética en Informática', cr:6, prereqs:[]},
+        {name:'Taller de Comunicación Efectiva', cr:2, prereqs:['Taller de Habilidades Socioemocionales']},
+        {name:'Desafío Empresa I', cr:7, prereqs:[]}
+      ],
+      '6': [
+        {name:'Inglés Nivel B2-', cr:0, prereqs:['Inglés Nivel B1+']},
+        {name:'Software Development Certification II', cr:1, prereqs:['Software Development Certification I']},
+        {name:'Business Intelligence', cr:8, prereqs:['Análisis de Datos e Inferencia Estadística','Inglés Nivel B1+']},
+        {name:'Arquitectura de Sistemas', cr:8, prereqs:['Ingeniería de Software']},
+        {name:'Tecnologías y Aplicaciones Web', cr:8, prereqs:['Bootcamp Lenguajes de Programación','Taller de Visualización de Datos']},
+        {name:'Redes de Computadores', cr:6, prereqs:['Ingeniería de Software']},
+        {name:'Desafío en Empresa II', cr:7, prereqs:['Desafío Empresa I']}
+      ],
+      '7': [
+        {name:'Big Data Certification', cr:1, prereqs:[]},
+        {name:'Formulación y Evaluación de Proyectos', cr:10, prereqs:['Optimización Aplicada Negocios']},
+        {name:'Taller de Ciencia de Redes', cr:6, prereqs:['Base de Datos','Redes de Computadores']},
+        {name:'Computación Paralela y Distribuida', cr:8, prereqs:['Arquitectura de Sistemas','Redes de Computadores']},
+        {name:'Artificial Intelligence Workshop', cr:10, prereqs:['Business Intelligence','Inglés Nivel B1+']},
+        {name:'Trabajo en Empresa I', cr:21, prereqs:['Desafío en Empresa II']}
+      ],
+      '8': [
+        {name:'Examen de Licenciatura', cr:0, prereqs:['Semestre 1','Semestre 2','Semestre 3','Semestre 4','Semestre 5','Semestre 6','Semestre 7','Semestre 8']},
+        {name:'Advanced Certification I', cr:1, prereqs:['Software Development Certification II']},
+        {name:'Deep Learning Workshop', cr:10, prereqs:['Artificial Intelligence Workshop','Inglés Nivel B2-']},
+        {name:'Innovación y Emprendimiento Tecnológico', cr:6, prereqs:['Formulación y Evaluación de Proyectos']},
+        {name:'Seguridad y Protección de Datos', cr:8, prereqs:['Taller de Ciencia de Redes']},
+        {name:'Tecnologías Emergentes', cr:8, prereqs:['Artificial Intelligence Workshop']},
+        {name:'Taller de Liderazgo', cr:2, prereqs:['Taller de Comunicación Efectiva']},
+        {name:'Trabajo en Empresa II', cr:21, prereqs:[]}
+      ],
+      '9': [
+        {name:'Advanced Certification II', cr:1, prereqs:['Advanced Certification I']},
+        {name:'Electivo I', cr:7, prereqs:[]},
+        {name:'Electivo II', cr:7, prereqs:[]},
+        {name:'Gestión de Proyectos Informáticos', cr:8, prereqs:['Formulación y Evaluación de Proyectos']},
+        {name:'Big Data Engineering', cr:8, prereqs:['Advanced Databases Workshop','Inglés Nivel B2-']},
+        {name:'Taller de Empleabilidad', cr:2, prereqs:['Taller de Liderazgo']},
+        {name:'Trabajo en Empresa III', cr:21, prereqs:['Trabajo en Empresa II']}
+      ],
+      '10': [
+        {name:'Electivo III', cr:7, prereqs:[]},
+        {name:'Digital Transformation Workshop', cr:6, prereqs:['Gestión de Proyectos Informáticos','Inglés Nivel B2+']},
+        {name:'Trabajo en Empresa IV', cr:21, prereqs:['Trabajo en Empresa III']},
+        {name:'Proyecto de Titulación', cr:14, prereqs:['Trabajo en Empresa III','Gestión de Proyectos Informáticos']}
+      ],
       'english': [
         {name:'Inglés Nivel A2-', cr:0, prereqs:[]},
         {name:'Inglés Nivel A2+', cr:0, prereqs:['Inglés Nivel A2-']},
@@ -56,12 +150,7 @@
       ]
     };
 
-    // Aseguramos que cada curso tenga prereqs como array
-    Object.values(data).forEach(arr =>
-      arr.forEach(item => { if (!Array.isArray(item.prereqs)) item.prereqs = []; })
-    );
-
-    // Precompute dependents (cursos para los que este es prerequisito)
+    // Dependientes
     const dependents = {};
     Object.values(data).flat().forEach(item => {
       item.prereqs.forEach(pr => {
@@ -73,107 +162,44 @@
     const select = document.getElementById('semester-select');
     const grid = document.getElementById('grid');
 
-    // Persistencia
-    const getState = id => { try { return JSON.parse(localStorage.getItem(id)) || {}; } catch { return {}; } };
-    const saveState = (id, state) => localStorage.setItem(id, JSON.stringify(state));
-
-    // Población del selector (con Inglés y CELE)
+    // Poblado selector
     Object.keys(data).forEach(key => {
-      const opt = document.createElement('option');
-      opt.value = key;
-      if (key === 'english') {
-        opt.textContent = 'Inglés';
-      } else if (key === 'CELE') {
-        opt.textContent = 'CELE';
-      } else {
-        opt.textContent = 'Semestre ' + key;
-      }
+      const opt = document.createElement('option'); opt.value = key;
+      opt.textContent = key === 'english' ? 'Inglés' : key === 'CELE' ? 'CELE' : 'Semestre ' + key;
       select.appendChild(opt);
     });
 
-    select.addEventListener('change', () => showSemester(select.value));
-    document.getElementById('reset-btn').addEventListener('click', () => {
-      localStorage.clear();
-      select.value = '';
-      grid.innerHTML = '';
-    });
+    // Estado
+    const getState = id => { try { return JSON.parse(localStorage.getItem(id)) || {}; } catch { return {}; }};
+    const saveState = (id, state) => localStorage.setItem(id, JSON.stringify(state));
 
+    select.addEventListener('change', () => {
+      if (!select.value) { grid.innerHTML = ''; grid.classList.remove('active'); return; }
+      showSemester(select.value);
+    });
+    document.getElementById('reset-btn').addEventListener('click', () => { localStorage.clear(); select.value = ''; grid.innerHTML = ''; grid.classList.remove('active'); });
+
+    // Mostrar
     function showSemester(key) {
       grid.innerHTML = '';
-      if (!data[key]) return;
       data[key].forEach(item => {
         const id = key + '-' + item.name;
         const state = getState(id);
-        const card = document.createElement('div');
-        card.className = 'card' + (state.approved ? ' approved' : '');
-        card.dataset.id = id;
-
-        const title = document.createElement('h3');
-        title.textContent = item.name;
-        const credits = document.createElement('p');
-        credits.textContent = 'Créditos: ' + item.cr;
-        card.append(title, credits);
-
-        // Nota
-        const label = document.createElement('label');
-        label.textContent = 'Nota:';
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.min = 1;
-        input.max = 7;
-        input.step = 0.1;
-        input.value = state.note || '';
-        input.addEventListener('blur', e => {
-          state.note = e.target.value;
-          saveState(id, state);
-        });
-        label.append(input);
-        card.append(label);
-
-        // Popover de prereqs y dependientes
-        card.addEventListener('mouseenter', () => {
-          removePopovers();
-          const pop = document.createElement('div');
-          pop.className = 'popover';
-          const h4Deps = document.createElement('h4');
-          h4Deps.textContent = 'Debes aprobar:';
-          const ulDeps = document.createElement('ul');
-          (item.prereqs.length ? item.prereqs : ['Este ramo no tiene prerrequisitos'])
-            .forEach(pr => {
-              const li = document.createElement('li');
-              li.textContent = pr;
-              ulDeps.append(li);
-            });
-          const h4For = document.createElement('h4');
-          h4For.textContent = 'Pre-requisito para:';
-          const ulFor = document.createElement('ul');
-          (dependents[item.name] && dependents[item.name].length
-            ? dependents[item.name]
-            : ['No es prerrequisito']
-          ).forEach(d => {
-            const li = document.createElement('li');
-            li.textContent = d;
-            ulFor.append(li);
-          });
-          pop.append(h4Deps, ulDeps, h4For, ulFor);
-          card.append(pop);
-        });
-        card.addEventListener('mouseleave', removePopovers);
-
-        // Toggle aprobado
-        card.addEventListener('click', () => {
-          state.approved = !state.approved;
-          saveState(id, state);
-          card.classList.toggle('approved', state.approved);
-        });
-
+        const card = document.createElement('div'); card.className = 'card' + (state.approved ? ' approved' : ''); card.dataset.id = id;
+        card.innerHTML = `<h3>${item.name}</h3><p>Créditos: ${item.cr}</p>`;
+        const label = document.createElement('label'); label.textContent = 'Nota:';
+        const input = document.createElement('input'); input.type = 'number'; input.min = 1; input.max = 7; input.step = 0.1; input.value = state.note || '';
+        input.addEventListener('blur', e => { state.note = e.target.value; saveState(id, state); }); label.append(input); card.append(label);
+        card.addEventListener('mouseenter', () => { removePopovers(); const pop = document.createElement('div'); pop.className = 'popover'; pop.innerHTML = `
+          <h4>Debes aprobar:</h4><ul>${(item.prereqs.length ? item.prereqs : ['Este ramo no tiene prerrequisitos']).map(pr => `<li>${pr}</li>`).join('')}</ul>
+          <h4>Prerrequisito para:</h4><ul>${((dependents[item.name]||[]).length ? dependents[item.name] : ['No es prerrequisito']).map(d=>`<li>${d}</li>`).join('')}</ul>
+        `; card.append(pop); }); card.addEventListener('mouseleave', removePopovers);
+        card.addEventListener('click', () => { state.approved = !state.approved; saveState(id, state); card.classList.toggle('approved', state.approved); });
         grid.appendChild(card);
       });
+      grid.classList.add('active');
     }
-
-    function removePopovers() {
-      document.querySelectorAll('.popover').forEach(el => el.remove());
-    }
+    function removePopovers() { document.querySelectorAll('.popover').forEach(el => el.remove()); }
   </script>
 </body>
 </html>
